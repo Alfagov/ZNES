@@ -928,7 +928,7 @@ test "functional test" {
     const SUCCESS_TRAP: u16 = 0x3469;
 
     var cpu = Cpu.init();
-    try cpu.loadFromFile("src/6502_functional_test.bin", BIN_START_ADDR);
+    try cpu.loadFromFile("tests/6502_functional_test.bin", BIN_START_ADDR);
     cpu.pc = PROGRAM_START;
 
     while (true) {
@@ -956,7 +956,7 @@ test "decimal test" {
     const DONE_ADDR: u16 = 0x024B;
 
     var cpu = Cpu.init();
-    try cpu.loadFromFile("src/6502_decimal_test.bin", BIN_START_ADDR);
+    try cpu.loadFromFile("tests/6502_decimal_test.bin", BIN_START_ADDR);
     cpu.pc = PROGRAM_START;
 
     while (cpu.pc != DONE_ADDR) {
@@ -982,7 +982,7 @@ test "interrupt test" {
     const NMI_BIT: u8 = 1 << 1;
 
     var cpu = Cpu.init();
-    try cpu.loadFromFile("src/6502_interrupt_test.bin", BIN_START_ADDR);
+    try cpu.loadFromFile("tests/6502_interrupt_test.bin", BIN_START_ADDR);
     cpu.pc = PROGRAM_START;
     cpu.bus.write(FEEDBACK_ADDR, 0);
 
