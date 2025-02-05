@@ -62,13 +62,24 @@ pub const Cpu = struct {
     overflow: bool,
     negative: bool,
 
+    // Vectors
+    stack_base: u16 = STACK_BASE,
+    vector_base: u8 = VECTOR_BASE,
+
+    // Info
+    clocks_per_s: usize = 13000,//1_789_773,
+    remaining_clocks: usize = 0,
+    current_instruction: Instruction = Instruction.fromByte(0),
+
     pub fn init() Cpu {
+        var bus = Bus{ .mem = undefined };
+        @memset(&bus.mem, 0);
         return .{
-            .bus = Bus{ .mem = undefined },
+            .bus = bus,
             .a = 0,
             .x = 0,
             .y = 0,
-            .sp = 0,
+            .sp = 0xFD,
             .pc = 0,
             .carry = false,
             .zero = false,
@@ -78,6 +89,13 @@ pub const Cpu = struct {
             .overflow = false,
             .negative = false,
         };
+    }
+
+    pub fn reset(self: *Cpu) void {
+        self.interrupt_disable = true;
+
+        self.sp = self.sp -% 3;
+        self.pc = self.readAbsolute(0xFFFC);
     }
 
     inline fn bit(flag: bool, shift: u8) u8 {
@@ -136,9 +154,19 @@ pub const Cpu = struct {
         self.sp -%= 1;
     }
 
+    pub fn clock(self: *Cpu) void {
+        if (self.remaining_clocks == 0) {
+            self.step();
+        } else {
+            self.remaining_clocks -= 1;
+        }
+    }
+
     pub fn step(self: *Cpu) void {
         const opcode_byte = self.readPC();
         const instruction = Instruction.fromByte(opcode_byte);
+
+        self.current_instruction = instruction;
 
         const addr: u16 = switch (instruction.addressing) {
             .Implied => 0,
@@ -156,6 +184,7 @@ pub const Cpu = struct {
         };
 
         instruction.opcode_fn(self, addr);
+        self.remaining_clocks = instruction.cycles - 1;
     }
 
     fn nmi(self: *Cpu) void {
