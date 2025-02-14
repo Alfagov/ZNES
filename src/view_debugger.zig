@@ -126,7 +126,7 @@ pub fn cpuStackView(cpu: *Cpu, screen_height: i32, panel_width: i32) void {
 
     for (0..viewCount) |idx| {
         const addr: u16 = @intCast(0x0100 + viewStart - idx);
-        const text = rl.textFormat("0x%02x: 0x%02x", .{ addr - 0x0100, cpu.bus.peek(addr) });
+        const text = rl.textFormat("0x%02x: 0x%02x", .{ addr -% 0x0100, cpu.bus.peek(addr) });
 
         if ((addr - 0x0100) == cpu.sp) {
             rl.drawRectangle(
@@ -236,7 +236,7 @@ pub fn tileBankToFrames(ppu: *PPU, bank: usize, frame: [][8*8]rl.Color) void {
                 lower = lower >> 1;
                 const rgb = switch (value) {
                     0 => ppu.palette.getColor(0x01),
-                    1 => ppu.palette.getColor(0x23),
+                    1 => ppu.palette.getColor(0x02),
                     2 => ppu.palette.getColor(0x27),
                     3 => ppu.palette.getColor(0x30),
                     else => unreachable,
@@ -257,6 +257,8 @@ pub fn paletteViewer(ppu: *PPU) [4*8]rl.Color {
             const color_index = ppu.read(
                 0x3F00 + @as(u16, @truncate(palette_idx)) * 4 + @as(u16, @truncate(palette_color_idx))
             );
+
+            //std.debug.print("Palette {} {} {}\n", .{palette_idx, palette_color_idx, color_index});
 
             const pixel = ppu.palette.getColor(color_index % 64);
             const offset = (palette_idx * 4 + palette_color_idx);
@@ -323,8 +325,8 @@ fn getBgPalette(ppu: *PPU, tile_column: usize, tile_row: usize) [4]u8 {
 
     const palette_offset: u16 = 0x3F01;
     const palette_start: u16 = palette_offset + palette_idx * 4;
-    return .{
-        ppu.read(palette_start - 1),
+    return [_]u8{
+        ppu.read(0x3F00),
         ppu.read(palette_start),
         ppu.read(palette_start + 1),
         ppu.read(palette_start + 2),
@@ -332,13 +334,13 @@ fn getBgPalette(ppu: *PPU, tile_column: usize, tile_row: usize) [4]u8 {
 }
 
 pub fn nametableViewer(ppu: *PPU, frame: []rl.Color) void {
-    std.debug.assert(frame.len == 32*8*4*30*8);
+    std.debug.assert(frame.len == 32*8*1*30*8);
     const tile_bank: u16 = ppu.control_register.flags.B;
 
-    for (0..4) |nametable| {
+    for (0..1) |nametable| {
         for (0..32) |tile_x| {
             for (0..30) |tile_y| {
-                const tile: u16 = ppu.read(@truncate(0x2000 + (0x400 * nametable) + tile_y * 32 * tile_x));
+                const tile: u16 = ppu.read(@truncate(0x2000 + (0x400 * nametable) + tile_y * 32 + tile_x));
                 const base_offset = (tile_bank * 0x1000) + (tile * 16);
 
                 const bg_palette = getBgPalette(ppu, tile_x, tile_y);

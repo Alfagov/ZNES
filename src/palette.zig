@@ -5,13 +5,13 @@ const Self = @This();
 
 palette: [64]rl.Color = undefined,
 
-const fallback_palette_path = "fallback_palette.pal";
-const fallback_palette: *[64][4]u8 = @constCast(@ptrCast(@embedFile(fallback_palette_path)));
+const fallback_palette_path = "ntscpalette.pal";
+const fallback_palette: *[64][3]u8 = @constCast(@ptrCast(@embedFile(fallback_palette_path)));
 
 pub fn init() Self {
     var palette: [64]rl.Color = undefined;
     for (fallback_palette, 0..) |color, i| {
-        palette[i] = rl.Color{ .r = color[0], .g = color[1], .b = color[2], .a = color[3] };
+        palette[i] = rl.Color{ .r = color[0], .g = color[1], .b = color[2], .a = 0xFF };
     }
 
     return .{

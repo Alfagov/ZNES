@@ -138,11 +138,19 @@ pub const NesBus = struct {
 
     fn readPrgRom(self: *NesBus, addr: u16) u8 {
         if (self.rom) |rom| {
-            var shifted_addr = addr - 0x8000;
-            if (rom.prg_len == 0x4000 and shifted_addr >= 0x4000) {
-                shifted_addr = shifted_addr % 0x4000;
+            switch (addr) {
+                0x4000...0x7FFF => return 0,
+                0x8000...0xBFFF => {
+                    const rom_addr = addr - 0x8000;
+                    return rom.prg_rom[rom_addr];
+                },
+                0xC000...0xFFFF => {
+                    const rom_addr = addr - 0x8000 - rom.mirror;
+                    return rom.prg_rom[rom_addr];
+
+                },
+                else => unreachable,
             }
-            return rom.prg_rom[shifted_addr];
         } else {
             @panic("No ROM loaded");
         }
@@ -163,7 +171,7 @@ pub const NesBus = struct {
                 else => return 0,
             },
             0x4016 => return bus.controller.readControllerOne(),
-            0x8000...0xFFFF => {
+            0x4020...0xFFFF => {
                 return bus.readPrgRom(addr);
             },
             else => return 0,

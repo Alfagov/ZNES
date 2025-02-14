@@ -59,7 +59,7 @@ pub fn fromByte(byte: u8) Instruction {
         0x25 => Instruction{ .opcode = 0x25, .name = "AND", .addressing = .ZeroPage, .cycles = 3, .opcode_fn = and_ },
         0x29 => Instruction{ .opcode = 0x29, .name = "AND", .addressing = .Immediate, .cycles = 2, .opcode_fn = and_ },
         0x2D => Instruction{ .opcode = 0x2D, .name = "AND", .addressing = .Absolute, .cycles = 4, .opcode_fn = and_ },
-        0x31 => Instruction{ .opcode = 0x31, .name = "AND", .addressing = .IndirectY, .cycles = 6, .opcode_fn = and_ },
+        0x31 => Instruction{ .opcode = 0x31, .name = "AND", .addressing = .IndirectY, .cycles = 5, .opcode_fn = and_ },
         0x35 => Instruction{ .opcode = 0x35, .name = "AND", .addressing = .ZeroPageX, .cycles = 4, .opcode_fn = and_ },
         0x39 => Instruction{ .opcode = 0x39, .name = "AND", .addressing = .AbsoluteY, .cycles = 4, .opcode_fn = and_ },
         0x3D => Instruction{ .opcode = 0x3D, .name = "AND", .addressing = .AbsoluteX, .cycles = 4, .opcode_fn = and_ },

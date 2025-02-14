@@ -19,6 +19,7 @@ pub const Rom = struct {
 
     mapper: u8,
     mirroring: Mirroring,
+    mirror: u16 = 0,
 
     pub fn fromFile(path: []const u8, abs: bool) !Rom {
         const file = if (abs) try std.fs.openFileAbsolute(path, .{}) else try std.fs.cwd().openFile(path, .{});
@@ -55,6 +56,9 @@ pub const Rom = struct {
         const prg_rom_size: usize = @as(usize, buffer[4]) * PRG_ROM_PAGE_SIZE;
         const chr_rom_size: usize = @as(usize, buffer[5]) * CHR_ROM_PAGE_SIZE;
 
+        if (@as(usize, buffer[4]) == 1) {
+            rom.mirror = 0x4000;
+        }
         const skip_trainer = buffer[6] & 0b100 != 0;
 
         const prg_rom_start: usize = 16 + if (skip_trainer) @as(usize, 512) else (0);

@@ -18,7 +18,7 @@ palette_texture: rl.Texture,
 sprite_texture: rl.Texture,
 sprite_frame: [64*64]rl.Color = undefined,
 nametable_texture: rl.Texture,
-nametable_frame: [32*8*4*30*8]rl.Color = undefined,
+nametable_frame: [32*8*1*30*8]rl.Color = undefined,
 screen_texture: rl.Texture = undefined,
 
 chr_textutes: [2][256]rl.Texture = undefined,
@@ -31,10 +31,10 @@ pub fn init(bus: *NesBus, screen_width: i32, screen_height: i32) !Self {
 
     log.info("Window initialized", .{});
 
-    const palette_image = rl.Image.genColor(4, 8, rl.Color.black);
-    const sprite_image = rl.Image.genColor(64, 64, rl.Color.black);
-    const nametable_image = rl.Image.genColor(32*8, 4*30*8, rl.Color.black);
-    const render_image = rl.Image.genColor(256, 240, rl.Color.black);
+    const palette_image = rl.Image.genColor(4, 8, rl.Color.white);
+    const sprite_image = rl.Image.genColor(64, 64, rl.Color.white);
+    const nametable_image = rl.Image.genColor(32*8, 1*30*8, rl.Color.white);
+    const render_image = rl.Image.genColor(256, 240, rl.Color.white);
 
     var fe: Self = .{
         .screen_height = screen_height,
@@ -113,7 +113,7 @@ pub fn run(self: *Self) !void {
 
                 rl.drawTexturePro(self.palette_texture, .{ .x = 0, .y = 0, .width = @floatFromInt(self.palette_texture.width), .height =  @floatFromInt(self.palette_texture.height)}, .{.x = 750, .y = 350, .height = 100, .width = 100}, rl.Vector2{.x = 0, .y = 0}, 0, rl.Color.white);
                 rl.drawTexturePro(self.sprite_texture, .{ .x = 0, .y = 0, .width = @floatFromInt(self.sprite_texture.width), .height =  @floatFromInt(self.sprite_texture.height)}, .{.x = 750, .y = 210, .height = 128, .width = 128}, rl.Vector2{.x = 0, .y = 0}, 0, rl.Color.white);
-                rl.drawTexturePro(self.nametable_texture, .{ .x = 0, .y = 0, .width = @floatFromInt(self.nametable_texture.width), .height =  @floatFromInt(self.nametable_texture.height)}, .{.x = 870, .y = 350, .height = 100, .width = 100}, rl.Vector2{.x = 0, .y = 0}, 0, rl.Color.white);
+                rl.drawTexturePro(self.nametable_texture, .{ .x = 0, .y = 0, .width = @floatFromInt(self.nametable_texture.width), .height =  @floatFromInt(self.nametable_texture.height)}, .{.x = 500, .y = 390, .height = 1*30*8, .width = 32*8}, rl.Vector2{.x = 0, .y = 0}, 0, rl.Color.white);
             }
         }
 

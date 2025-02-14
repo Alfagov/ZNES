@@ -114,7 +114,7 @@ oam_data_register: struct {
     }
 
     pub fn write(self: *OamDataRegister, value: u8) void {
-        const ppu = @as(*Self, @alignCast(@fieldParentPtr("oam_data_register", self)));
+        var ppu = @as(*Self, @alignCast(@fieldParentPtr("oam_data_register", self)));
         ppu.oam[ppu.oam_address_register.address] = value;
         ppu.oam_address_register.address +%= 1;
     }
@@ -268,7 +268,9 @@ pub fn read(self: *Self, addr: u16) u8 {
             },
             else => unreachable,
         },
-        0x3F00...0x3FFF => self.palette_ram_indices[getPaletteAddress(wrapped_addr)],
+        0x3F00...0x3FFF => {
+            return self.palette_ram_indices[getPaletteAddress(wrapped_addr)];
+        },
         else => {
             std.debug.print("Unmapped ppu bus read: {X}\n", .{addr});
             return 0;
@@ -286,7 +288,9 @@ pub fn write(self: *Self, addr: u16, data: u8) void {
             },
             else => unreachable,
         },
-        0x3F00...0x3FFF => self.palette_ram_indices[getPaletteAddress(addr)] = data,
+        0x3F00...0x3FFF => {
+            self.palette_ram_indices[getPaletteAddress(addr)] = data;
+        },
         else => {
             std.debug.print("Unmapped ppu bus read: {X}\n", .{addr});
         },
@@ -511,7 +515,7 @@ fn updateTileRegisters(self: *Self) void {
             },
             3 => {
                 const attr_byte = self.read(0x23C0 | (self.v & 0x0C00) | ((self.v >> 4) & 0x38) | ((self.v >> 2) & 0x07));
-                const palette_idx = (attr_byte >> @truncate(((self.v >> 4) & 4) | (self.v & 2) & 0b11));
+                const palette_idx = (attr_byte >> @truncate(((self.v >> 4) & 4) | (self.v & 2))) & 0b11;
                 self.palette_offset_latch = palette_idx << 2;
             },
             5 => {
@@ -536,8 +540,8 @@ fn renderPixel(self: *Self) void {
 
     if (self.mask_register.flags.b == 1 and !(self.mask_register.flags.m == 0 and self.dot <= 8)) {
         const x_offset: u3 = self.x;
-        const palette_color: u16 = (((self.tile_low_shift << x_offset) & 0x8000) >> 15) |
-                                      (((self.tile_high_shift << x_offset) & 0x8000) >> 14);
+        const palette_color: u16 = (((self.tile_low_shift << x_offset) & 0x8000) >> 15)  |
+                                   (((self.tile_high_shift << x_offset) & 0x8000) >> 14);
 
         var palette_offset: u16 = 0;
         if (palette_color == 0) {
@@ -609,4 +613,3 @@ fn renderPixel(self: *Self) void {
     const pixel_color = self.palette.getColor(self.read(0x3F00 + pixel_color_address) % 64);
     self.screen.setPixel(self.dot - 1, self.scanline, pixel_color);
 }
-
