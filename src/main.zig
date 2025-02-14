@@ -41,7 +41,6 @@ pub fn main() !void {
     };
     var cpu = Cpu.init(bus.interface());
     bus.setupCpu(&cpu);
-
     bus.reset();
 
     var fe = try FE.init(&bus, 1024, 768);

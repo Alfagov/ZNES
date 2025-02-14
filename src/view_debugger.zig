@@ -235,10 +235,10 @@ pub fn tileBankToFrames(ppu: *PPU, bank: usize, frame: [][8*8]rl.Color) void {
                 upper = upper >> 1;
                 lower = lower >> 1;
                 const rgb = switch (value) {
-                    0 => Palette.getColor(0x01),
-                    1 => Palette.getColor(0x23),
-                    2 => Palette.getColor(0x27),
-                    3 => Palette.getColor(0x30),
+                    0 => ppu.palette.getColor(0x01),
+                    1 => ppu.palette.getColor(0x23),
+                    2 => ppu.palette.getColor(0x27),
+                    3 => ppu.palette.getColor(0x30),
                     else => unreachable,
                 };
                 frame[tile_idx][(y * 8) + x] = rgb;
@@ -258,7 +258,7 @@ pub fn paletteViewer(ppu: *PPU) [4*8]rl.Color {
                 0x3F00 + @as(u16, @truncate(palette_idx)) * 4 + @as(u16, @truncate(palette_color_idx))
             );
 
-            const pixel = Palette.getColor(color_index % 64);
+            const pixel = ppu.palette.getColor(color_index % 64);
             const offset = (palette_idx * 4 + palette_color_idx);
             frame[offset] = pixel;
         }
@@ -297,7 +297,7 @@ pub fn spriteViewer(ppu: *PPU, frame: []rl.Color) void {
                     color = ppu.read(0x3F10 + @as(u16, palette_id) * 4 + palette_color);
                 }
 
-                const pixel = Palette.getColor(color);
+                const pixel = ppu.palette.getColor(color);
                 const x_offset = if (flip_h) x else 7 - x;
                 const y_offset = if (!flip_v) y else 7 - y;
                 const offset = (((i / 8) * 8 + y_offset) * 64 + ((i % 8) * 8 + x_offset));
@@ -352,7 +352,7 @@ pub fn nametableViewer(ppu: *PPU, frame: []rl.Color) void {
                         upper = upper >> 1;
                         lower = lower >> 1;
                         const color = bg_palette[palette_color];
-                        const pixel = Palette.getColor(color);
+                        const pixel = ppu.palette.getColor(color);
                         const x_offset = 7 - x;
                         const y_offset = y;
                         const texture_tile_y = tile_y + 30 * nametable;

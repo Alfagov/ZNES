@@ -51,6 +51,7 @@ screen: Screen,
 bus: Bus,
 vram: [2048]u8,
 rom: Rom,
+palette: Palette = Palette.init(),
 
 control_register: struct {
     const ControlRegister = @This();
@@ -605,7 +606,7 @@ fn renderPixel(self: *Self) void {
             }
         }
     }
-    const pixel_color = Palette.getColor(self.read(0x3F00 + pixel_color_address) % 64);
+    const pixel_color = self.palette.getColor(self.read(0x3F00 + pixel_color_address) % 64);
     self.screen.setPixel(self.dot - 1, self.scanline, pixel_color);
 }
 

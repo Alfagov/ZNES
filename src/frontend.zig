@@ -3,6 +3,7 @@ const rl = @import("raylib");
 
 const NesBus = @import("bus.zig").NesBus;
 const view_debugger = @import("view_debugger.zig");
+const log = std.log.scoped(.FrontEnd);
 
 const Self = @This();
 
@@ -28,6 +29,8 @@ pub fn init(bus: *NesBus, screen_width: i32, screen_height: i32) !Self {
     rl.initWindow(screen_width, screen_height, "ZNES");
     rl.setTargetFPS(60);
 
+    log.info("Window initialized", .{});
+
     const palette_image = rl.Image.genColor(4, 8, rl.Color.black);
     const sprite_image = rl.Image.genColor(64, 64, rl.Color.black);
     const nametable_image = rl.Image.genColor(32*8, 4*30*8, rl.Color.black);
@@ -52,6 +55,8 @@ pub fn init(bus: *NesBus, screen_width: i32, screen_height: i32) !Self {
         }
     }
 
+    log.info("Succesfully initialized FE", .{});
+
     return fe;
 }
 
@@ -59,6 +64,8 @@ pub fn init(bus: *NesBus, screen_width: i32, screen_height: i32) !Self {
 pub fn run(self: *Self) !void {
 
     defer rl.closeWindow();
+
+    log.info("Running FE", .{});
 
     while (!rl.windowShouldClose()) {
         // Load ROM by dropping it into the window
@@ -126,8 +133,7 @@ pub fn run(self: *Self) !void {
         commandPalette(self.debug);
         joypadView(self.bus);
 
-        rl.drawFPS(700, 600);
-
+        rl.drawFPS(self.screen_width - 70, self.screen_height - 20);
     }
 
 }
@@ -137,8 +143,10 @@ fn controls(self: *Self) void {
     // Reset or start
     if (rl.isKeyDown(rl.KeyboardKey.left_shift) and rl.isKeyDown(rl.KeyboardKey.r)) {
         self.bus.reset();
-    } else if (rl.isKeyDown(rl.KeyboardKey.r)) {
-        self.paused = false;
+    }
+
+    if (rl.isKeyReleased(rl.KeyboardKey.p)) {
+        self.paused = !self.paused;
     }
 
     // Debug View
@@ -199,9 +207,7 @@ fn commandPalette(debug: bool) void {
 
     rl.drawText("Emulation", base_x, base_y, 15, rl.Color.black);
     base_y += 20;
-    rl.drawText("P: Pause", base_x, base_y, 15, rl.Color.black);
-    base_y += 20;
-    rl.drawText("R: Run", base_x, base_y, 15, rl.Color.black);
+    rl.drawText("P: Toggle Pause", base_x, base_y, 15, rl.Color.black);
     base_y += 20;
     rl.drawText("N: Step", base_x, base_y, 15, rl.Color.black);
     base_y += 20;
