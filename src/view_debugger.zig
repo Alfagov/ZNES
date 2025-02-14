@@ -1,6 +1,8 @@
 const std = @import("std");
 const Cpu = @import("cpu.zig").Cpu;
 const rl = @import("raylib");
+const PPU = @import("ppu.zig");
+const Palette = @import("palette.zig");
 
 const PAGE_SIZE = 0xA0;
 
@@ -124,7 +126,7 @@ pub fn cpuStackView(cpu: *Cpu, screen_height: i32, panel_width: i32) void {
 
     for (0..viewCount) |idx| {
         const addr: u16 = @intCast(0x0100 + viewStart - idx);
-        const text = rl.textFormat("0x%02x: 0x%02x", .{ addr - 0x0100, cpu.bus.mem[addr] });
+        const text = rl.textFormat("0x%02x: 0x%02x", .{ addr - 0x0100, cpu.bus.peek(addr) });
 
         if ((addr - 0x0100) == cpu.sp) {
             rl.drawRectangle(
@@ -157,7 +159,7 @@ pub fn cpuMemoryView(cpu: *Cpu, left_panel_width: i32, screen_width: i32, height
     rl.drawText(rl.textFormat("Clocks per frame: %d", .{ cpu.clocks_per_s/60 }), memPanelX + 20, posY, 16, rl.Color.white);
     posY += 20;
 
-    const page = getPage(cpu.bus.mem[0..], cpu.pc);
+    const page = getPage(cpu.bus.getSlice()[0..], cpu.pc);
     rl.drawText(rl.textFormat("Page: %02X - %02X", .{ page.page_start, page.page_end }), memPanelX + 300, posY - 20, 16, rl.Color.white);
 
     rl.drawText(rl.textFormat("CI: %02X - %s", .{ cpu.current_instruction.opcode, cpu.current_instruction.name.ptr }), memPanelX + 500, posY - 20, 16, rl.Color.white);
@@ -177,5 +179,188 @@ pub fn cpuMemoryView(cpu: *Cpu, left_panel_width: i32, screen_width: i32, height
             continue;
         }
         idx += 1;
+    }
+}
+
+pub fn chrRomView(ppu: *PPU, screen_height: i32, textures_bank_0: [256]rl.Texture2D, textures_bank_1: [256]rl.Texture2D, frames_bank_0: [][8*8]rl.Color, frames_bank_1: [][8*8]rl.Color) void {
+
+    const size = 15;
+    const stackPanelHeight: i32 = 300;
+    const panelMargin = 320;
+    const stackPanelY: i32 = screen_height - stackPanelHeight - 10;
+    rl.drawRectangle(
+        panelMargin, stackPanelY,
+        650, stackPanelHeight,
+        rl.Color{ .r = 60, .g = 60, .b = 60, .a = 255 }
+    );
+    rl.drawText("CHR Rom", panelMargin + 10, stackPanelY + 20, 20, rl.Color.white);
+
+
+    tileBankToFrames(ppu, 0, frames_bank_0);
+    tileBankToFrames(ppu, 1, frames_bank_1);
+    const start_x: usize = panelMargin + 10;
+    var start_y: usize = @intCast(stackPanelY + 40);
+
+    for (frames_bank_0, frames_bank_1, 0..) |*frame0, *frame1, idx| {
+        if (idx % 20 == 0) {
+            start_y += size+2;
+        }
+        rl.updateTexture(textures_bank_0[idx], frame0);
+        rl.drawTexturePro(textures_bank_0[idx], .{ .x = 0, .y = 0, .width = @floatFromInt(textures_bank_0[idx].width), .height =  @floatFromInt(textures_bank_0[idx].height)}, .{.x = @floatFromInt(start_x + ((idx % 20)*size) + 330), .y = @floatFromInt(start_y), .height = size, .width = size}, rl.Vector2{.x = 0, .y = 0}, 0, rl.Color.white);
+
+        rl.updateTexture(textures_bank_1[idx], frame1);
+        rl.drawTexturePro(textures_bank_1[idx], .{ .x = 0, .y = 0, .width = @floatFromInt(textures_bank_1[idx].width), .height =  @floatFromInt(textures_bank_1[idx].height)}, .{.x = @floatFromInt(start_x + ((idx % 20)*size)), .y = @floatFromInt(start_y), .height = size, .width = size}, rl.Vector2{.x = 0, .y = 0}, 0, rl.Color.white);
+    }
+}
+
+pub fn tileBankToFrames(ppu: *PPU, bank: usize, frame: [][8*8]rl.Color) void {
+    var tile_y: usize = 0;
+    var tile_x: usize = 0;
+    const bank_n = (bank * 0x1000);
+
+    for (0..255) |tile_idx| {
+        if (tile_idx != 0 and tile_idx % 20 == 0) {
+            tile_y += 10;
+            tile_x = 0;
+        }
+
+        const tile = ppu.rom.chr_rom[(bank_n + tile_idx * 16)..(bank_n + tile_idx * 16 + 15)+1];
+        for (0..8) |y| {
+            var upper = tile[y];
+            var lower = tile[y + 8];
+
+            for (0..8) |x_r| {
+                const x: usize = 7 - x_r;
+                const value = (1 & upper) << 1 | (1 & lower);
+                upper = upper >> 1;
+                lower = lower >> 1;
+                const rgb = switch (value) {
+                    0 => Palette.getColor(0x01),
+                    1 => Palette.getColor(0x23),
+                    2 => Palette.getColor(0x27),
+                    3 => Palette.getColor(0x30),
+                    else => unreachable,
+                };
+                frame[tile_idx][(y * 8) + x] = rgb;
+            }
+        }
+
+        tile_x += 10;
+    }
+}
+
+pub fn paletteViewer(ppu: *PPU) [4*8]rl.Color {
+    var frame: [4*8]rl.Color = undefined;
+    @memset(&frame, rl.Color.white);
+    for (0..8) |palette_idx| {
+        for (0..4) |palette_color_idx| {
+            const color_index = ppu.read(
+                0x3F00 + @as(u16, @truncate(palette_idx)) * 4 + @as(u16, @truncate(palette_color_idx))
+            );
+
+            const pixel = Palette.getColor(color_index % 64);
+            const offset = (palette_idx * 4 + palette_color_idx);
+            frame[offset] = pixel;
+        }
+    }
+
+    return frame;
+}
+
+pub fn spriteViewer(ppu: *PPU, frame: []rl.Color) void {
+    std.debug.assert(frame.len == 64*64);
+
+    const sprite_bank: u16 = ppu.control_register.flags.S;
+
+    for (0..ppu.oam.len/4) |i| {
+        const sprite_idx = i * 4;
+
+        const tile: u16 = ppu.oam[sprite_idx + 1];
+        const palette_id: u2 = @truncate(ppu.oam[sprite_idx + 2]);
+        const flip_h = ppu.oam[sprite_idx + 2] >> 6 & 1 == 1;
+        const flip_v = ppu.oam[sprite_idx + 2] >> 7 & 1 == 1;
+
+        const base_offset = (sprite_bank * 0x1000) + (tile * 16);
+
+        for (0..8) |y| {
+            var lower = ppu.read(base_offset + @as(u16, @truncate(y)));
+            var upper = ppu.read(base_offset + @as(u16, @truncate(y + 8)));
+
+            for (0..8) |x| {
+                const palette_color: u2 = @truncate((upper & 1) << 1 | (lower & 1));
+                upper = upper >> 1;
+                lower = lower >> 1;
+                var color: u8 = undefined;
+                if (palette_color == 0) {
+                    color = ppu.read(0x3F00);
+                } else {
+                    color = ppu.read(0x3F10 + @as(u16, palette_id) * 4 + palette_color);
+                }
+
+                const pixel = Palette.getColor(color);
+                const x_offset = if (flip_h) x else 7 - x;
+                const y_offset = if (!flip_v) y else 7 - y;
+                const offset = (((i / 8) * 8 + y_offset) * 64 + ((i % 8) * 8 + x_offset));
+                frame[offset] = pixel;
+            }
+        }
+    }
+}
+
+fn getBgPalette(ppu: *PPU, tile_column: usize, tile_row: usize) [4]u8 {
+
+    const attribute_table_idx = (tile_row / 4) * 8 + (tile_column / 4);
+    const attribute_byte = ppu.read(
+        @truncate(0x23C0 + 0x400 * @as(u16, ppu.control_register.flags.N) + attribute_table_idx)
+    );
+
+    const palette_idx = switch (@as(u2, @truncate((((tile_row % 4) & 2) + ((tile_column % 4) / 2))))) {
+        0 => attribute_byte & 0b11,
+        1 => (attribute_byte >> 2) & 0b11,
+        2 => (attribute_byte >> 4) & 0b11,
+        3 => (attribute_byte >> 6) & 0b11,
+    };
+
+    const palette_offset: u16 = 0x3F01;
+    const palette_start: u16 = palette_offset + palette_idx * 4;
+    return .{
+        ppu.read(palette_start - 1),
+        ppu.read(palette_start),
+        ppu.read(palette_start + 1),
+        ppu.read(palette_start + 2),
+    };
+}
+
+pub fn nametableViewer(ppu: *PPU, frame: []rl.Color) void {
+    std.debug.assert(frame.len == 32*8*4*30*8);
+    const tile_bank: u16 = ppu.control_register.flags.B;
+
+    for (0..4) |nametable| {
+        for (0..32) |tile_x| {
+            for (0..30) |tile_y| {
+                const tile: u16 = ppu.read(@truncate(0x2000 + (0x400 * nametable) + tile_y * 32 * tile_x));
+                const base_offset = (tile_bank * 0x1000) + (tile * 16);
+
+                const bg_palette = getBgPalette(ppu, tile_x, tile_y);
+
+                for (0..8) |y| {
+                    var lower = ppu.read(base_offset + @as(u16, @truncate(y)));
+                    var upper = ppu.read(base_offset + @as(u16, @truncate(y + 8)));
+
+                    for (0..8) |x| {
+                        const palette_color: u2 = @truncate((upper & 1) << 1 | (lower & 1));
+                        upper = upper >> 1;
+                        lower = lower >> 1;
+                        const color = bg_palette[palette_color];
+                        const pixel = Palette.getColor(color);
+                        const x_offset = 7 - x;
+                        const y_offset = y;
+                        const texture_tile_y = tile_y + 30 * nametable;
+                        const offset = ((texture_tile_y * 8 + y_offset) * 32 * 8) + (tile_x * 8 + x_offset);
+                        frame[offset] = pixel;
+                    }
+                }
+            }
+        }
     }
 }

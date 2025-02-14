@@ -1,20 +1,12 @@
 const std = @import("std");
 const Instruction = @import("instruction.zig");
-
-pub const Bus = struct {
-
-    mem: [0x20000]u8 = undefined,
-
-    pub fn read(self: *Bus, addr: u16) u8 {
-        return self.mem[addr];
-    }
-    pub fn write(self: *Bus, addr: u16, data: u8) void {
-        self.mem[addr] = data;
-    }
-};
+const BusInterface = @import("bus.zig").BusInterface;
+const writer = std.io.getStdOut().writer();
 
 const STACK_BASE: u16 = 0x0100;
 const VECTOR_BASE: u8 = 0xFF;
+
+const log = std.log.scoped(.Cpu);
 
 pub const Cpu = struct {
     pub const Flag = enum(u8) {
@@ -44,7 +36,7 @@ pub const Cpu = struct {
     };
 
     // Memory
-    bus: Bus,
+    bus: BusInterface,
 
     // Registers
     a: u8,
@@ -67,13 +59,11 @@ pub const Cpu = struct {
     vector_base: u8 = VECTOR_BASE,
 
     // Info
-    clocks_per_s: usize = 13000,//1_789_773,
+    clocks_per_s: usize = 1_789_773,//13000,//1_789_773,
     remaining_clocks: usize = 0,
     current_instruction: Instruction = Instruction.fromByte(0),
 
-    pub fn init() Cpu {
-        var bus = Bus{ .mem = undefined };
-        @memset(&bus.mem, 0);
+    pub fn init(bus: BusInterface) Cpu {
         return .{
             .bus = bus,
             .a = 0,
@@ -91,11 +81,56 @@ pub const Cpu = struct {
         };
     }
 
+    pub fn clock(self: *Cpu) void {
+        if (self.remaining_clocks == 0) {
+            self.step();
+        } else {
+            self.remaining_clocks -= 1;
+        }
+    }
+
+    pub fn step(self: *Cpu) void {
+        //const op_pc = self.pc;
+        const opcode_byte = self.readPC();
+        const instruction = Instruction.fromByte(opcode_byte);
+
+
+        self.current_instruction = instruction;
+
+        //log.debug("{X} {X:0>2}\t{s}\t", .{op_pc, instruction.opcode, instruction.name});
+
+        const addr: u16 = switch (instruction.addressing) {
+            .Implied => 0,
+            .Immediate => self.takeImmediate(),
+            .ZeroPage => self.takeZeroPage(),
+            .ZeroPageX => self.takeZeroPageX(),
+            .ZeroPageY => self.takeZeroPageY(),
+            .Absolute => self.takeAbsolute(),
+            .AbsoluteX => self.takeAbsoluteX(),
+            .AbsoluteY => self.takeAbsoluteY(),
+            .IndirectX => self.takeIndexedIndirect(),
+            .IndirectY => self.takeIndirectIndexed(),
+            .Relative => self.takeRelative(),
+            .Indirect => self.takeIndirect(),
+        };
+
+        //log.debug("\t\tA:{X:0>2} X:{X:0>2} Y:{X:0>2} P:{X:0>2} SP:{X}\n", .{self.a, self.x, self.y, self.getStatus(false), self.sp});
+
+
+        instruction.opcode_fn(self, addr);
+        self.remaining_clocks = instruction.cycles - 1;
+    }
+
     pub fn reset(self: *Cpu) void {
         self.interrupt_disable = true;
 
         self.sp = self.sp -% 3;
-        self.pc = self.readAbsolute(0xFFFC);
+        self.pc = self.read16(0xFFFC);
+        self.carry = false;
+        self.zero = false;
+        self.decimal = false;
+        self.overflow = false;
+        self.negative = false;
     }
 
     inline fn bit(flag: bool, shift: u8) u8 {
@@ -118,6 +153,17 @@ pub const Cpu = struct {
             | bit(self.decimal, 3)
             | bit(b, 4)
             | 1 << 5
+            | bit(self.overflow, 6)
+            | bit(self.negative, 7);
+    }
+
+    fn getStatus_(self: *const Cpu, b: bool) u8 {
+        return bit(self.carry, 0)
+            | bit(self.zero, 1)
+            | bit(self.interrupt_disable, 2)
+            | bit(self.decimal, 3)
+            | bit(b, 4)
+            | 0 << 5
             | bit(self.overflow, 6)
             | bit(self.negative, 7);
     }
@@ -145,49 +191,16 @@ pub const Cpu = struct {
     pub fn stackPop(self: *Cpu) u8 {
         self.sp +%= 1;
         const addr = STACK_BASE +% @as(u16, self.sp);
-        return self.bus.read(addr);
+        return self.readByte(addr);
     }
 
     pub fn stackPush(self: *Cpu, value: u8) void {
         const addr = STACK_BASE +% @as(u16, self.sp);
-        self.bus.write(addr, value);
+        self.writeByte(addr, value);
         self.sp -%= 1;
     }
 
-    pub fn clock(self: *Cpu) void {
-        if (self.remaining_clocks == 0) {
-            self.step();
-        } else {
-            self.remaining_clocks -= 1;
-        }
-    }
-
-    pub fn step(self: *Cpu) void {
-        const opcode_byte = self.readPC();
-        const instruction = Instruction.fromByte(opcode_byte);
-
-        self.current_instruction = instruction;
-
-        const addr: u16 = switch (instruction.addressing) {
-            .Implied => 0,
-            .Immediate => self.takeImmediate(),
-            .ZeroPage => self.takeZeroPage(),
-            .ZeroPageX => self.takeZeroPageX(),
-            .ZeroPageY => self.takeZeroPageY(),
-            .Absolute => self.takeAbsolute(),
-            .AbsoluteX => self.takeAbsoluteX(),
-            .AbsoluteY => self.takeAbsoluteY(),
-            .IndirectX => self.takeIndexedIndirect(),
-            .IndirectY => self.takeIndirectIndexed(),
-            .Relative => self.takeRelative(),
-            .Indirect => self.takeIndirect(),
-        };
-
-        instruction.opcode_fn(self, addr);
-        self.remaining_clocks = instruction.cycles - 1;
-    }
-
-    fn nmi(self: *Cpu) void {
+    pub fn nmi(self: *Cpu) void {
         const NMI_VECTOR: u16 = 0xFFFA;
         const lo: u8 = @intCast(self.pc & 0xFF);
         const hi: u8 = @intCast(self.pc >> 8);
@@ -196,7 +209,7 @@ pub const Cpu = struct {
         self.stackPush(self.getStatus(false));
         self.interrupt_disable = true;
 
-        self.pc = self.readAbsolute(NMI_VECTOR);
+        self.pc = self.read16(NMI_VECTOR);
     }
 
     fn irq(self: *Cpu) void {
@@ -209,7 +222,7 @@ pub const Cpu = struct {
             self.stackPush(self.getStatus(false));
             self.interrupt_disable = true;
 
-            self.pc = self.readAbsolute(NMI_VECTOR);
+            self.pc = self.read16(NMI_VECTOR);
         }
     }
 
@@ -217,10 +230,19 @@ pub const Cpu = struct {
         return self.bus.read(addr);
     }
 
-    pub fn readAbsolute(self: *Cpu, addr: u16) u16 {
+    pub fn writeByte(self: *Cpu, addr: u16, value: u8) void {
+        self.bus.write(addr, value);
+    }
+
+    pub fn read16(self: *Cpu, addr: u16) u16 {
         const lo = self.readByte(addr);
         const hi = self.readByte(addr + 1);
         return (@as(u16, hi) << 8) | lo;
+    }
+
+    pub fn write16(self: *Cpu, addr: u16, value: u16) void {
+        self.writeByte(addr, @intCast(value & 0xFF));
+        self.writeByte(addr + 1, @intCast(value >> 8));
     }
 
     pub fn readPC(self: *Cpu) u8 {
@@ -237,54 +259,93 @@ pub const Cpu = struct {
     fn takeImmediate(self: *Cpu) u16 {
         const addr = self.pc;
         _ = self.readPC();
+        //log.debug("#${X:0>2}", .{self.readByte(addr)});
         return addr;
     }
 
     fn takeRelative(self: *Cpu) u16 {
         const offset = @as(i8, @bitCast(self.readPC()));
-        const result: i16 = @as(i16, @intCast(self.pc)) +% offset;
+        const result: i32 = @as(i32, @intCast(self.pc)) +% offset;
+        //log.debug("${X:0>4}", .{@as(u16, @intCast(result))});
         return @intCast(result);
     }
 
     fn takeZeroPage(self: *Cpu) u8 {
-        return self.readPC();
+        const addr = self.readPC();
+        //log.debug("${X:0>2} = {X:0>2}", .{addr, self.readByte(addr)});
+        return addr;
     }
 
     fn takeIndirect(self: *Cpu) u16 {
-        const addr = self.takeAbsolute();
-        return self.readAbsolute(addr);
+        const addr = self.readAbsolute();
+
+        const out_addr = if (addr & 0x00FF == 0x00FF) (@as(u16, self.readByte(addr & 0xFF00)) << 8) | self.readByte(addr) else self.read16(addr);
+
+        //log.debug("(${X:0>4}) = {X:0>4}", .{(@as(u16, self.readByte(self.pc-1)) << 8) | self.readByte(self.pc-2), out_addr});
+        return out_addr;
     }
 
     fn takeAbsolute(self: *Cpu) u16 {
+        const lo = self.readPC();
+        const hi = self.readPC();
+
+        const addr = (@as(u16, hi) << 8) | lo;
+        //log.debug("${X:0>4} = {X:0>2}", .{addr, self.readByte(addr)});
+        return addr;
+    }
+
+    fn readAbsolute(self: *Cpu) u16 {
         const lo = self.readPC();
         const hi = self.readPC();
         return (@as(u16, hi) << 8) | lo;
     }
 
     fn takeAbsoluteX(self: *Cpu) u16 {
-        return self.takeAbsolute() +% self.x;
+        const addr = self.readAbsolute() +% self.x;
+        //log.debug("${X:0>4},X @ {X:0>4} = {X:0>2}", .{addr - self.x, addr, self.readByte(addr)});
+        return addr;
     }
 
     fn takeAbsoluteY(self: *Cpu) u16 {
-        return self.takeAbsolute() +% self.y;
+        const addr = self.readAbsolute() +% self.y;
+        //log.debug("${X:0>4},Y @ {X:0>4} = {X:0>2}", .{addr -% self.y, addr, self.readByte(addr)});
+        return addr;
     }
 
-    fn takeZeroPageX(self: *Cpu) u8 {
-        return self.takeZeroPage() +% self.x;
+    fn takeZeroPageX(self: *Cpu) u16 {
+        const addr = self.readPC() +% self.x;
+        //log.debug("${X:0>2},X @ {X:0>2} = {X:0>2}", .{self.readByte(self.pc - 1), addr, self.readByte(addr)});
+        return addr;
     }
 
-    fn takeZeroPageY(self: *Cpu) u8 {
-        return self.takeZeroPage() +% self.y;
+    fn takeZeroPageY(self: *Cpu) u16 {
+        const addr = self.readPC() +% self.y;
+        //log.debug("${X:0>2},Y @ {X:0>2} = {X:0>2}", .{self.readByte(self.pc - 1), addr, self.readByte(addr)});
+        return addr;
     }
 
     fn takeIndexedIndirect(self: *Cpu) u16 {
-        const addr = self.takeZeroPageX();
-        return self.readAbsolute(addr);
+        const addr = self.readPC() +% self.x;
+
+        const lo = self.readByte(addr);
+        const hi = self.readByte(addr +% 1);
+
+        const out_addr = (@as(u16, hi) << 8) | lo;
+
+        //log.debug("(${X:0>2},X) @ {X:0>2} = {X:0>4} = {X:0>2}", .{self.readByte(self.pc - 1), self.readByte(self.pc - 1) +% self.x, out_addr, self.readByte(out_addr)});
+        return out_addr;
     }
 
     fn takeIndirectIndexed(self: *Cpu) u16 {
-        const addr = self.takeZeroPage();
-        return self.readAbsolute(addr) +% self.y;
+        const addr = self.readPC();
+
+        const lo = self.readByte(addr);
+        const hi = self.readByte(addr +% 1);
+
+        const out_addr = @as(u16, (@as(u16, hi) << 8) | lo) +% self.y;
+
+        //log.debug("(${X:0>2}),Y = {X:0>4} @ {X:0>4} = {X:0>2}", .{self.readByte(self.pc - 1), out_addr, self.read16(out_addr), self.readByte(out_addr)});
+        return out_addr;
     }
 
     pub fn loadFromFile(self: *Cpu, path: []const u8, start: u16) !void {

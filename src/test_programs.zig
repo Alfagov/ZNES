@@ -26,11 +26,11 @@ pub const snake_program = [_]u8{0x20, 0x06, 0x06, 0x20, 0x38, 0x06, 0x20, 0x0d, 
     0xea, 0xca, 0xd0, 0xfb, 0x60};
 
 pub fn loadSnakeProgram(cpu: *Cpu) void {
-    @memcpy(cpu.bus.mem[0x0600..0x0600+snake_program.len], snake_program[0..]);
+    @memcpy(cpu.bus.getSlice()[0x0600..0x0600+snake_program.len], snake_program[0..]);
     cpu.pc = 0x0600;
 
-    cpu.bus.mem[0xFFFC] = 0x00;
-    cpu.bus.mem[0xFFFD] = 0x06;
+    cpu.bus.write(0xFFFC, 0x00);
+    cpu.bus.write(0xFFFD, 0x06);
 }
 
 fn loadTestFunctionalProgram(cpu: *Cpu) void {

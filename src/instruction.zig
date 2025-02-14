@@ -251,7 +251,78 @@ pub fn fromByte(byte: u8) Instruction {
         0xE2 => Instruction{ .opcode = 0xE2, .name = "NOP", .addressing = .Immediate, .cycles = 2, .opcode_fn = nop },
         0xF4 => Instruction{ .opcode = 0xF4, .name = "NOP", .addressing = .ZeroPageX, .cycles = 4, .opcode_fn = nop },
         0xFA => Instruction{ .opcode = 0xFA, .name = "NOP", .addressing = .Implied, .cycles = 2, .opcode_fn = nop },
+        0xFC => Instruction{ .opcode = 0xFC, .name = "NOP", .addressing = .AbsoluteX, .cycles = 4, .opcode_fn = nop },
         0xFF => Instruction{ .opcode = 0xFF, .name = "ISC", .addressing = .AbsoluteX, .cycles = 7, .opcode_fn = isc },
+
+        // Unofficial
+        0x03 => Instruction{ .opcode = 0x03, .name = "SLO", .addressing = .IndirectX, .cycles = 8, .opcode_fn = slo },
+        0x07 => Instruction{ .opcode = 0x07, .name = "SLO", .addressing = .ZeroPage, .cycles = 5, .opcode_fn = slo },
+        0x0B => Instruction{ .opcode = 0x0B, .name = "ANC", .addressing = .Immediate, .cycles = 2, .opcode_fn = anc },
+        0x0F => Instruction{ .opcode = 0x0F, .name = "SLO", .addressing = .Absolute, .cycles = 6, .opcode_fn = slo },
+
+        0x13 => Instruction{ .opcode = 0x13, .name = "SLO", .addressing = .IndirectY, .cycles = 8, .opcode_fn = slo },
+        0x17 => Instruction{ .opcode = 0x17, .name = "SLO", .addressing = .ZeroPageX, .cycles = 6, .opcode_fn = slo },
+        0x1B => Instruction{ .opcode = 0x1B, .name = "SLO", .addressing = .AbsoluteY, .cycles = 7, .opcode_fn = slo },
+        0x1F => Instruction{ .opcode = 0x1F, .name = "SLO", .addressing = .AbsoluteX, .cycles = 7, .opcode_fn = slo },
+
+        0x23 => Instruction{ .opcode = 0x23, .name = "RLA", .addressing = .IndirectX, .cycles = 8, .opcode_fn = rla },
+        0x27 => Instruction{ .opcode = 0x27, .name = "RLA", .addressing = .ZeroPage, .cycles = 5, .opcode_fn = rla },
+        0x2B => Instruction{ .opcode = 0x2B, .name = "ANC", .addressing = .Immediate, .cycles = 2, .opcode_fn = anc },
+        0x2F => Instruction{ .opcode = 0x2F, .name = "RLA", .addressing = .Absolute, .cycles = 6, .opcode_fn = rla },
+
+        0x33 => Instruction{ .opcode = 0x33, .name = "RLA", .addressing = .IndirectY, .cycles = 8, .opcode_fn = rla },
+        0x37 => Instruction{ .opcode = 0x37, .name = "RLA", .addressing = .ZeroPageX, .cycles = 6, .opcode_fn = rla },
+        0x3B => Instruction{ .opcode = 0x3B, .name = "RLA", .addressing = .AbsoluteY, .cycles = 7, .opcode_fn = rla },
+        0x3F => Instruction{ .opcode = 0x3F, .name = "RLA", .addressing = .AbsoluteX, .cycles = 7, .opcode_fn = rla },
+
+        0x43 => Instruction{ .opcode = 0x43, .name = "SRE", .addressing = .IndirectX, .cycles = 8, .opcode_fn = sre },
+        0x47 => Instruction{ .opcode = 0x47, .name = "SRE", .addressing = .ZeroPage, .cycles = 5, .opcode_fn = sre },
+        0x4B => Instruction{ .opcode = 0x4B, .name = "ALR", .addressing = .Immediate, .cycles = 2, .opcode_fn = alr },
+        0x4F => Instruction{ .opcode = 0x4F, .name = "SRE", .addressing = .Absolute, .cycles = 6, .opcode_fn = sre },
+
+        0x53 => Instruction{ .opcode = 0x53, .name = "SRE", .addressing = .IndirectY, .cycles = 8, .opcode_fn = sre },
+        0x57 => Instruction{ .opcode = 0x57, .name = "SRE", .addressing = .ZeroPageX, .cycles = 6, .opcode_fn = sre },
+        0x5B => Instruction{ .opcode = 0x5B, .name = "SRE", .addressing = .AbsoluteY, .cycles = 7, .opcode_fn = sre },
+        0x5F => Instruction{ .opcode = 0x5F, .name = "SRE", .addressing = .AbsoluteX, .cycles = 7, .opcode_fn = sre },
+
+        0x63 => Instruction{ .opcode = 0x63, .name = "RRA", .addressing = .IndirectX, .cycles = 8, .opcode_fn = rra },
+        0x67 => Instruction{ .opcode = 0x67, .name = "RRA", .addressing = .ZeroPage, .cycles = 5, .opcode_fn = rra },
+        0x6B => Instruction{ .opcode = 0x6B, .name = "ARR", .addressing = .Immediate, .cycles = 2, .opcode_fn = arr },
+        0x6F => Instruction{ .opcode = 0x6F, .name = "RRA", .addressing = .Absolute, .cycles = 6, .opcode_fn = rra },
+
+        0x73 => Instruction{ .opcode = 0x73, .name = "RRA", .addressing = .IndirectY, .cycles = 8, .opcode_fn = rra },
+        0x77 => Instruction{ .opcode = 0x77, .name = "RRA", .addressing = .ZeroPageX, .cycles = 6, .opcode_fn = rra },
+        0x7B => Instruction{ .opcode = 0x7B, .name = "RRA", .addressing = .AbsoluteY, .cycles = 7, .opcode_fn = rra },
+        0x7F => Instruction{ .opcode = 0x7F, .name = "RRA", .addressing = .AbsoluteX, .cycles = 7, .opcode_fn = rra },
+
+        0x83 => Instruction{ .opcode = 0x83, .name = "SAX", .addressing = .IndirectX, .cycles = 6, .opcode_fn = sax },
+        0x87 => Instruction{ .opcode = 0x87, .name = "SAX", .addressing = .ZeroPage, .cycles = 3, .opcode_fn = sax },
+        0x8B => Instruction{ .opcode = 0x8B, .name = "XAA", .addressing = .Immediate, .cycles = 2, .opcode_fn = xaa },
+        0x8F => Instruction{ .opcode = 0x8F, .name = "SAX", .addressing = .Absolute, .cycles = 4, .opcode_fn = sax },
+
+        0x93 => Instruction{ .opcode = 0x93, .name = "AHX", .addressing = .IndirectY, .cycles = 6, .opcode_fn = ahx },
+        0x97 => Instruction{ .opcode = 0x97, .name = "SAX", .addressing = .ZeroPageY, .cycles = 4, .opcode_fn = sax },
+        0x9B => Instruction{ .opcode = 0x9B, .name = "TAS", .addressing = .AbsoluteY, .cycles = 5, .opcode_fn = tas },
+        0x9F => Instruction{ .opcode = 0x9F, .name = "AHX", .addressing = .AbsoluteY, .cycles = 5, .opcode_fn = ahx },
+
+        0xA3 => Instruction{ .opcode = 0xA3, .name = "LAX", .addressing = .IndirectX, .cycles = 6, .opcode_fn = lax },
+        0xA7 => Instruction{ .opcode = 0xA7, .name = "LAX", .addressing = .ZeroPage, .cycles = 3, .opcode_fn = lax },
+        0xAB => Instruction{ .opcode = 0xAB, .name = "LAX", .addressing = .Immediate, .cycles = 2, .opcode_fn = lax },
+        0xAF => Instruction{ .opcode = 0xAF, .name = "LAX", .addressing = .Absolute, .cycles = 4, .opcode_fn = lax },
+
+        0xB3 => Instruction{ .opcode = 0xB3, .name = "LAX", .addressing = .IndirectY, .cycles = 5, .opcode_fn = lax },
+        0xB7 => Instruction{ .opcode = 0xB7, .name = "LAX", .addressing = .ZeroPageY, .cycles = 4, .opcode_fn = lax },
+        0xBB => Instruction{ .opcode = 0xBB, .name = "LAS", .addressing = .AbsoluteY, .cycles = 4, .opcode_fn = las },
+        0xBF => Instruction{ .opcode = 0xBF, .name = "LAX", .addressing = .AbsoluteY, .cycles = 4, .opcode_fn = lax },
+
+        0xE3 => Instruction{ .opcode = 0xE3, .name = "ISC", .addressing = .IndirectX, .cycles = 8, .opcode_fn = isc },
+        0xE7 => Instruction{ .opcode = 0xE7, .name = "ISC", .addressing = .ZeroPage, .cycles = 5, .opcode_fn = isc },
+        0xEB => Instruction{ .opcode = 0xEB, .name = "SBC", .addressing = .Immediate, .cycles = 2, .opcode_fn = sbc },
+        0xEF => Instruction{ .opcode = 0xEF, .name = "ISC", .addressing = .Absolute, .cycles = 6, .opcode_fn = isc },
+
+        0xF3 => Instruction{ .opcode = 0xF3, .name = "ISC", .addressing = .IndirectY, .cycles = 8, .opcode_fn = isc },
+        0xF7 => Instruction{ .opcode = 0xF7, .name = "ISC", .addressing = .ZeroPageX, .cycles = 6, .opcode_fn = isc },
+        0xFB => Instruction{ .opcode = 0xFB, .name = "ISC", .addressing = .AbsoluteY, .cycles = 7, .opcode_fn = isc },
 
         else => {
             std.debug.print("Found opcode: {x}\n", .{byte});
@@ -273,15 +344,15 @@ fn brk(self: *Cpu, _: u16) void {
     self.stackPush(self.getStatus(true));
     self.interrupt_disable = true;
 
-    self.pc = self.readAbsolute(0xFFFE);
+    self.pc = self.read16(0xFFFE);
 }
 
 fn stx(self: *Cpu, addr: u16) void {
-    self.bus.write(addr, self.x);
+    self.writeByte(addr, self.x);
 }
 
 fn sty(self: *Cpu, addr: u16) void {
-    self.bus.write(addr, self.y);
+    self.writeByte(addr, self.y);
 }
 
 fn ror(self: *Cpu, addr: u16) void {
@@ -289,7 +360,7 @@ fn ror(self: *Cpu, addr: u16) void {
     const carry: u8 = @intFromBool(self.carry);
     self.carry = n & 0b0000_0001 != 0;
     const result = (n >> 1) | (carry << 7);
-    self.bus.write(addr, result);
+    self.writeByte(addr, result);
     self.updateNZFlags(result);
 }
 
@@ -303,7 +374,7 @@ fn lsr(self: *Cpu, addr: u16) void {
     const n = self.readByte(addr);
     self.carry = n & 0b0000_0001 != 0;
     const result = (n >> 1);
-    self.bus.write(addr, result);
+    self.writeByte(addr, result);
     self.updateNZFlags(result);
 }
 
@@ -317,7 +388,7 @@ fn rol(self: *Cpu, addr: u16) void {
     const carry: u8 = @intFromBool(self.carry);
     self.carry = n & 0b1000_0000 != 0;
     const result = (n << 1) | carry;
-    self.bus.write(addr, result);
+    self.writeByte(addr, result);
     self.updateNZFlags(result);
 }
 
@@ -331,7 +402,7 @@ fn asl(self: *Cpu, addr: u16) void {
     const n = self.readByte(addr);
     self.carry = n & 0b1000_0000 != 0;
     const result = n << 1;
-    self.bus.write(addr, result);
+    self.writeByte(addr, result);
     self.updateNZFlags(result);
 }
 
@@ -357,50 +428,42 @@ fn eor(self: *Cpu, addr: u16) void {
 
 fn adc(self: *Cpu, addr: u16) void {
     const operand = self.readByte(addr);
-    if (!self.decimal) {
-        // Compute the extra addition: add 1 if carry is set, otherwise 0.
-            const addend: u8 = if (self.carry) 1 else 0;
-        // Perform the addition using a 16-bit integer to capture any overflow.
-            const sum: u16 = @as(u16, @intCast(self.a)) + @as(u16, @intCast(operand)) + @as(u16, @intCast(addend));
-        // The 8-bit result wraps around (simulate the 6502’s 8-bit arithmetic).
-            const result: u8 = @truncate(sum);
-        // Carry flag: set if the sum exceeded 0xFF.
-            const newCarry: bool = sum > 0xFF;
-        // Overflow flag: set if the sign of the result is incorrect.
-        // If A and operand have the same sign, but result's sign is different, then overflow occurred.
-            const overflow: bool = (((~(self.a ^ operand)) & (self.a ^ result)) & 0x80) != 0;
-        // Negative flag: simply bit 7 of the result.
-            const negative: bool = (result & 0x80) != 0;
-        // Zero flag: set if the result is zero.
-            const zero: bool = result == 0;
 
-        self.carry = newCarry;
-        self.overflow = overflow;
-        self.negative = negative;
-        self.zero = zero;
-        self.a = result;
-    } else {
-        var lower = (self.a & 0xF) + (operand & 0xF) + @intFromBool(self.carry);
-        var upper = (self.a >> 4) + (operand >> 4);
+    const op = self.a;
+    self.a = op +% operand +% @intFromBool(self.carry);
 
-        var carry_out = false;
-        if (lower >= 10) {
-            lower = (lower - 10) & 0xF;
-            upper += 1;
-        }
-        if (upper >= 10) {
-            upper = (upper - 10) & 0xF;
-            carry_out = true;
-        }
+    self.overflow = @as(u1, @truncate(((self.a ^ op) & (self.a ^ operand)) >> 7)) == 1;
+    self.carry = self.a < (@as(u16, operand) +% @intFromBool(self.carry));
+    self.zero = self.a == 0;
+    self.negative = self.a & 0x80 != 0;
 
-        const result = (upper << 4) | lower;
-        self.carry = carry_out;
-        self.updateA(result);
-    }
+    // {
+    //     std.debug.print("DECIMAL ADC\n", .{});
+    //
+    //     var lower = (self.a & 0xF) + (operand & 0xF) + @intFromBool(self.carry);
+    //     var upper = (self.a >> 4) + (operand >> 4);
+    //
+    //     var carry_out = false;
+    //     if (lower >= 10) {
+    //         lower = (lower - 10) & 0xF;
+    //         upper += 1;
+    //     }
+    //     if (upper >= 10) {
+    //         upper = (upper - 10) & 0xF;
+    //         carry_out = true;
+    //     }
+    //
+    //     const result = (upper << 4) | lower;
+    //     self.carry = carry_out;
+    //     self.updateA(result);
+    //
+    //     std.debug.print("Operand: {} Result: {}\n", .{operand, self.a});
+    //
+    // }
 }
 
 fn sta(self: *Cpu, addr: u16) void {
-    self.bus.write(addr, self.a);
+    self.writeByte(addr, self.a);
 }
 
 fn lda(self: *Cpu, addr: u16) void {
@@ -439,7 +502,7 @@ fn cpy(self: *Cpu, addr: u16) void {
 fn dec(self: *Cpu, addr: u16) void {
     const n = self.readByte(addr);
     const result = n -% 1;
-    self.bus.write(addr, result);
+    self.writeByte(addr, result);
     self.updateNZFlags(result);
 }
 
@@ -459,7 +522,7 @@ fn dey(self: *Cpu, _: u16) void {
 fn inc(self: *Cpu, addr: u16) void {
     const n = self.readByte(addr);
     const result = n +% 1;
-    self.bus.write(addr, result);
+    self.writeByte(addr, result);
     self.updateNZFlags(result);
 }
 
@@ -473,41 +536,41 @@ fn iny(self: *Cpu, _: u16) void {
 
 fn sbc(self: *Cpu, addr: u16) void {
     const operand = self.readByte(addr);
-    if (!self.decimal) {
 
-        const borrow: u8 = if (self.carry) 0 else 1;
-        const diff: i16 = @as(i16, @intCast(self.a)) - @as(i16, @intCast(operand)) - @as(i16, @intCast(borrow));
-        const result: u8 = @truncate(@as(u16, @bitCast(diff)));
-        const newCarry: bool = diff >= 0;
-        // (This version is derived from interpreting SBC as A + (~operand) + C.)
-            const overflow: bool = (((self.a ^ result) & (self.a ^ operand)) & 0x80) != 0;
-        const negative: bool = (result & 0x80) != 0;
-        const zero: bool = result == 0;
+    const borrow: u8 = if (self.carry) 0 else 1;
+    const diff: i16 = @as(i16, @intCast(self.a)) - @as(i16, @intCast(operand)) - @as(i16, @intCast(borrow));
+    const result: u8 = @truncate(@as(u16, @bitCast(diff)));
+    const newCarry: bool = diff >= 0;
+    // (This version is derived from interpreting SBC as A + (~operand) + C.)
+        const overflow: bool = (((self.a ^ result) & (self.a ^ operand)) & 0x80) != 0;
+    const negative: bool = (result & 0x80) != 0;
+    const zero: bool = result == 0;
 
-        self.carry = newCarry;
-        self.overflow = overflow;
-        self.negative = negative;
-        self.zero = zero;
-        self.a = result;
-        return;
-    } else {
-        var lower = (@as(i16, @intCast(self.a)) & 0xF) - (@as(i16, @intCast(operand)) & 0xF) - @intFromBool(!self.carry);
-        var upper = (@as(i16, @intCast(self.a)) >> 4) - (@as(i16, @intCast(operand)) >> 4);
+    self.carry = newCarry;
+    self.overflow = overflow;
+    self.negative = negative;
+    self.zero = zero;
+    self.a = result;
+    return;
 
-        var carry_out = true;
-        if (lower & 0x10 != 0) {
-            lower = (lower + 10) & 0xF;
-            upper -= 1;
-        }
-        if (upper & 0x10 != 0) {
-            upper = (upper + 10) & 0xF;
-            carry_out = false;
-        }
-
-        const result = @as(u8, @intCast(upper << 4)) | @as(u8, @intCast(lower));
-        self.carry = carry_out;
-        self.updateA(result);
-    }
+    // {
+    //     var lower = (@as(i16, @intCast(self.a)) & 0xF) - (@as(i16, @intCast(operand)) & 0xF) - @intFromBool(!self.carry);
+    //     var upper = (@as(i16, @intCast(self.a)) >> 4) - (@as(i16, @intCast(operand)) >> 4);
+    //
+    //     var carry_out = true;
+    //     if (lower & 0x10 != 0) {
+    //         lower = (lower + 10) & 0xF;
+    //         upper -= 1;
+    //     }
+    //     if (upper & 0x10 != 0) {
+    //         upper = (upper + 10) & 0xF;
+    //         carry_out = false;
+    //     }
+    //
+    //     const result = @as(u8, @intCast(upper << 4)) | @as(u8, @intCast(lower));
+    //     self.carry = carry_out;
+    //     self.updateA(result);
+    // }
 }
 
 fn bvs(self: *Cpu, addr: u16) void {
@@ -667,4 +730,92 @@ fn pla(self: *Cpu, _: u16) void {
 fn isc(self: *Cpu, addr: u16) void {
     inc(self,addr);
     sbc(self, addr);
+}
+
+fn slo(self: *Cpu, addr: u16) void {
+    asl(self, addr);
+    ora(self, addr);
+}
+
+fn rla(self: *Cpu, addr: u16) void {
+    rol(self, addr);
+    and_(self, addr);
+}
+
+fn sre(self: *Cpu, addr: u16) void {
+    lsr(self, addr);
+    eor(self, addr);
+}
+
+fn rra(self: *Cpu, addr: u16) void {
+    ror(self, addr);
+    adc(self, addr);
+}
+
+fn arr(self: *Cpu, addr: u16) void {
+    and_(self, addr);
+    ror(self, addr);
+}
+
+fn alr(self: *Cpu, addr: u16) void {
+    and_(self, addr);
+    lsr(self, addr);
+}
+
+fn sax(self: *Cpu, addr: u16) void {
+    self.writeByte(addr, self.a & self.x);
+}
+
+fn las(self: *Cpu, addr: u16) void {
+    const n = self.readByte(addr);
+    const data = n & self.sp;
+    self.updateA(data);
+    self.updateX(data);
+    self.sp = data;
+}
+
+fn tas(self: *Cpu, addr: u16) void {
+    var data: u8 = self.a & self.x;
+    self.sp = data;
+    data = (@as(u8, @intCast(addr >> 8)) + 1) & self.sp;
+    self.writeByte(addr, data);
+}
+
+fn ahx(self: *Cpu, addr: u16) void {
+    const data: u8 = self.a & self.x & (@as(u8, @intCast(addr >> 8)));
+    self.writeByte(addr, data);
+}
+
+fn xaa(self: *Cpu, addr: u16) void {
+    self.updateA(self.x);
+    and_(self, addr);
+}
+
+fn lax(self: *Cpu, addr: u16) void {
+    const n = self.readByte(addr);
+    self.updateA(n);
+    self.x = self.a;
+}
+
+fn axs(self: *Cpu, addr: u16) void {
+    const n = self.readByte(addr);
+    const x_and_a = self.x & self.a;
+    const result = x_and_a -% n;
+
+    if (n <= x_and_a) {
+        self.carry = true;
+    }
+
+    self.updateNZFlags(result);
+
+    self.x = result;
+}
+
+fn anc(self: *Cpu, addr: u16) void {
+    and_(self, addr);
+    if (self.negative) {
+        self.carry = true;
+    } else {
+        self.carry = false;
+    }
 }
