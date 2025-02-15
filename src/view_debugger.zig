@@ -333,11 +333,10 @@ fn getBgPalette(ppu: *PPU, tile_column: usize, tile_row: usize) [4]u8 {
     };
 }
 
-pub fn nametableViewer(ppu: *PPU, frame: []rl.Color) void {
-    std.debug.assert(frame.len == 32*8*1*30*8);
+pub fn nametableViewer(ppu: *PPU, frame: [][32*8*30*8]rl.Color) void {
     const tile_bank: u16 = ppu.control_register.flags.B;
 
-    for (0..1) |nametable| {
+    for (0..4) |nametable| {
         for (0..32) |tile_x| {
             for (0..30) |tile_y| {
                 const tile: u16 = ppu.read(@truncate(0x2000 + (0x400 * nametable) + tile_y * 32 + tile_x));
@@ -357,9 +356,9 @@ pub fn nametableViewer(ppu: *PPU, frame: []rl.Color) void {
                         const pixel = ppu.palette.getColor(color);
                         const x_offset = 7 - x;
                         const y_offset = y;
-                        const texture_tile_y = tile_y + 30 * nametable;
+                        const texture_tile_y = tile_y;//+ 30 * nametable;
                         const offset = ((texture_tile_y * 8 + y_offset) * 32 * 8) + (tile_x * 8 + x_offset);
-                        frame[offset] = pixel;
+                        frame[nametable][offset] = pixel;
                     }
                 }
             }

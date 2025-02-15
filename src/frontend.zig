@@ -17,8 +17,8 @@ screen_width: i32,
 palette_texture: rl.Texture,
 sprite_texture: rl.Texture,
 sprite_frame: [64*64]rl.Color = undefined,
-nametable_texture: rl.Texture,
-nametable_frame: [32*8*1*30*8]rl.Color = undefined,
+nametable_texture: [4]rl.Texture,
+nametable_frame: [4][32*8*30*8]rl.Color = undefined,
 screen_texture: rl.Texture = undefined,
 
 chr_textutes: [2][256]rl.Texture = undefined,
@@ -33,7 +33,6 @@ pub fn init(bus: *NesBus, screen_width: i32, screen_height: i32) !Self {
 
     const palette_image = rl.Image.genColor(4, 8, rl.Color.white);
     const sprite_image = rl.Image.genColor(64, 64, rl.Color.white);
-    const nametable_image = rl.Image.genColor(32*8, 1*30*8, rl.Color.white);
     const render_image = rl.Image.genColor(256, 240, rl.Color.white);
 
     var fe: Self = .{
@@ -43,7 +42,7 @@ pub fn init(bus: *NesBus, screen_width: i32, screen_height: i32) !Self {
 
         .palette_texture = try rl.loadTextureFromImage(palette_image),
         .sprite_texture = try rl.loadTextureFromImage(sprite_image),
-        .nametable_texture = try rl.loadTextureFromImage(nametable_image),
+        .nametable_texture = undefined,
         .screen_texture = try rl.loadTextureFromImage(render_image),
     };
 
@@ -53,6 +52,12 @@ pub fn init(bus: *NesBus, screen_width: i32, screen_height: i32) !Self {
             const texture = try rl.loadTextureFromImage(text_image);
             fe.chr_textutes[bank][idx] = texture;
         }
+    }
+
+    for (0..4) |nametable| {
+        const nametable_image = rl.Image.genColor(32*8, 30*8, rl.Color.white);
+        const texture = try rl.loadTextureFromImage(nametable_image);
+        fe.nametable_texture[nametable] = texture;
     }
 
     log.info("Succesfully initialized FE", .{});
@@ -109,11 +114,21 @@ pub fn run(self: *Self) !void {
 
                 // Nametable
                 view_debugger.nametableViewer(&self.bus.ppu.?, &self.nametable_frame);
-                rl.updateTexture(self.nametable_texture, &self.nametable_frame);
+                var nt_x: f32 = 500;
+                var nt_y: f32 = 390;
+                for (self.nametable_frame, 0..) |nt_frame, idx| {
+                    if (idx % 2 == 0) {
+                        nt_x = 500;
+                        nt_y += 15*8 + 10;
+                    }
+                    rl.updateTexture(self.nametable_texture[idx], &nt_frame);
+                    rl.drawTexturePro(self.nametable_texture[idx], .{ .x = 0, .y = 0, .width = @floatFromInt(self.nametable_texture[0].width), .height =  @floatFromInt(self.nametable_texture[0].height)}, .{.x = nt_x, .y = nt_y, .height = 15*8, .width = 16*8}, rl.Vector2{.x = 0, .y = 0}, 0, rl.Color.white);
+                    nt_x += 16*8 + 10;
+
+                }
 
                 rl.drawTexturePro(self.palette_texture, .{ .x = 0, .y = 0, .width = @floatFromInt(self.palette_texture.width), .height =  @floatFromInt(self.palette_texture.height)}, .{.x = 750, .y = 350, .height = 100, .width = 100}, rl.Vector2{.x = 0, .y = 0}, 0, rl.Color.white);
                 rl.drawTexturePro(self.sprite_texture, .{ .x = 0, .y = 0, .width = @floatFromInt(self.sprite_texture.width), .height =  @floatFromInt(self.sprite_texture.height)}, .{.x = 750, .y = 210, .height = 128, .width = 128}, rl.Vector2{.x = 0, .y = 0}, 0, rl.Color.white);
-                rl.drawTexturePro(self.nametable_texture, .{ .x = 0, .y = 0, .width = @floatFromInt(self.nametable_texture.width), .height =  @floatFromInt(self.nametable_texture.height)}, .{.x = 500, .y = 390, .height = 1*30*8, .width = 32*8}, rl.Vector2{.x = 0, .y = 0}, 0, rl.Color.white);
             }
         }
 

@@ -1,5 +1,6 @@
 const std = @import("std");
-const Rom = @import("rom.zig").Rom;
+const Rom = @import("rom.zig");
+const RomInterface = Rom.RomInterface;
 const PPU = @import("ppu.zig");
 const Cpu = @import("cpu.zig").Cpu;
 const Controller = @import("controllers.zig");
@@ -68,7 +69,7 @@ pub const BusInterface = struct {
 
 pub const NesBus = struct {
     ram: [2048]u8 = undefined,
-    rom: ?Rom,
+    rom: Rom = .{},
     ppu: ?PPU,
     cpu: ?*Cpu = null,
     controller: Controller = .{},
@@ -76,7 +77,6 @@ pub const NesBus = struct {
     pub fn init() NesBus {
         return .{
             .ram = undefined,
-            .rom = null,
             .ppu = null,
         };
     }
@@ -103,13 +103,13 @@ pub const NesBus = struct {
     }
 
     pub fn loadRom(self: *NesBus, path: []const u8) !void {
-        self.rom = try Rom.fromFile(path, false);
-        self.ppu = PPU.init(self.interface(), self.rom.?);
+        try self.rom.loadRom(path, false);
+        self.ppu = PPU.init(self.interface(), &self.rom);
     }
 
     pub fn loadRomAbs(self: *NesBus, path: []const u8) !void {
-        self.rom = try Rom.fromFile(path, true);
-        self.ppu = PPU.init(self.interface(), self.rom.?);
+        try self.rom.loadRom(path, true);
+        self.ppu = PPU.init(self.interface(), &self.rom);
     }
 
     pub fn setupCpu(self: *NesBus, cpu: *Cpu) void {
@@ -172,7 +172,7 @@ pub const NesBus = struct {
             },
             0x4016 => return bus.controller.readControllerOne(),
             0x4020...0xFFFF => {
-                return bus.readPrgRom(addr);
+                return bus.rom.rom_impl.read(addr);
             },
             else => return 0,
         }
@@ -202,9 +202,8 @@ pub const NesBus = struct {
             },
             0x4014 => bus.ppu.?.oam_dma_register.write(data),
             0x4016 => bus.controller.strobeSet(data),
-            0x8000...0xFFFF => {
-                std.debug.print("READING: {X}\n", .{addr});
-                @panic("Cannot write to ROM");
+            0x4020...0xFFFF => {
+                bus.rom.rom_impl.write(addr, data);
             },
             else => {},
         }

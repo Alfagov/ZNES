@@ -2,7 +2,9 @@
 const std = @import("std");
 const rl = @import("raylib");
 const Bus = @import("bus.zig").BusInterface;
-const Rom = @import("rom.zig").Rom;
+//const Rom = @import("rom.zig").Rom;
+const Rom = @import("rom.zig");
+const RomInterface = Rom;
 const Palette = @import("palette.zig");
 
 const Self = @This();
@@ -49,8 +51,7 @@ palette_ram_indices: [0x20]u8,
 
 screen: Screen,
 bus: Bus,
-vram: [2048]u8,
-rom: Rom,
+rom: *Rom,
 palette: Palette = Palette.init(),
 
 control_register: struct {
@@ -200,18 +201,16 @@ oam_dma_register: struct {
     }
 } = .{},
 
-pub fn init(bus: Bus, rom: Rom) Self {
+pub fn init(bus: Bus, rom: *Rom) Self {
     var ppu: Self = .{
         .oam = undefined,
         .secondary_oam = undefined,
         .bus = bus,
-        .vram = undefined,
         .screen = Screen.init(),
         .palette_ram_indices = undefined,
         .rom = rom,
     };
 
-    @memset(ppu.vram[0..], 0);
     @memset(ppu.oam[0..], 0);
     @memset(ppu.secondary_oam[0..], 0);
     @memset(ppu.palette_ram_indices[0..], 0);
@@ -244,8 +243,6 @@ pub fn reset(self: *Self) void {
     self.status_register.flags = .{};
     self.oam_address_register.address = 0;
     self.data_register.read_buffer = 0;
-    self.vram = undefined;
-    @memset(self.vram[0..], 0);
     @memset(self.oam[0..], 0);
     @memset(self.secondary_oam[0..], 0);
     @memset(self.palette_ram_indices[0..], 0);
@@ -260,14 +257,7 @@ pub fn pollNmi(self: *Self) bool {
 pub fn read(self: *Self, addr: u16) u8 {
     const wrapped_addr = addr % 0x4000;
     return switch (wrapped_addr) {
-        0...0x3EFF => switch (wrapped_addr) {
-            0...0x1FFF => return self.rom.chr_rom[wrapped_addr],
-            0x2000...0x3FFF => {
-                const internal_addres = self.rom.getInternalAddress(wrapped_addr);
-                return self.vram[internal_addres];
-            },
-            else => unreachable,
-        },
+        0...0x3EFF => self.rom.rom_impl.ppuRead(wrapped_addr),
         0x3F00...0x3FFF => {
             return self.palette_ram_indices[getPaletteAddress(wrapped_addr)];
         },
@@ -280,14 +270,7 @@ pub fn read(self: *Self, addr: u16) u8 {
 
 pub fn write(self: *Self, addr: u16, data: u8) void {
     switch (addr % 0x4000) {
-        0...0x3EFF =>  switch (addr) {
-            0...0x1FFF => std.debug.print("Cannot write to CHR_ROM\n", .{}),
-            0x2000...0x3FFF => {
-                const internal_addres = self.rom.getInternalAddress(addr);
-                self.vram[internal_addres] = data;
-            },
-            else => unreachable,
-        },
+        0...0x3EFF =>  self.rom.rom_impl.ppuWrite(addr, data),
         0x3F00...0x3FFF => {
             self.palette_ram_indices[getPaletteAddress(addr)] = data;
         },
