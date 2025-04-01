@@ -2,3 +2,4 @@
 zig-out/
 .idea/
 tests/roms/
+/tests/roms/
