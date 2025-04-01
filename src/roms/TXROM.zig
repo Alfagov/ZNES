@@ -75,7 +75,7 @@ pub fn write(self: *Self, addr: u16, data: u8) void {
                 self.mirroring = @truncate(data & 1);
             } else {}
         },
-        0xC000...0xBFFF => {
+        0xC000...0xDFFF => {
             if (addr & 1 == 0) {
                 self.irq_counter_reload = data;
             } else {
@@ -121,7 +121,6 @@ fn getInternalAddress(mirror: u1, address: u16) u16 {
             else => unreachable,
         },
         0 => mirrored_addr % 0x800,
-        else => unreachable,
     };
 }
 
